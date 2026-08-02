@@ -1,18 +1,114 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Register() {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  // Step 1: User Account
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Step 2: Business Account
+  const [businessName, setBusinessName] = useState('');
+  const [category, setCategory] = useState('Fashion');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [currency, setCurrency] = useState('LKR (Rs.)');
+
+  const { session } = useAuth();
+
+  // If already logged in, skip to step 2 or dashboard
+  React.useEffect(() => {
+    if (session && step === 1) {
+      setStep(2);
+    }
+  }, [session, step]);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2);
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      
+      // The user is registered, session is established automatically in many cases
+      setStep(2);
+    } catch (err: any) {
+      setError(err.message || 'Failed to register');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleOnboarding = (e: React.FormEvent) => {
+  const handleOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error('Not authenticated');
+
+      // Create Business
+      const { data: business, error: bizError } = await supabase
+        .from('businesses')
+        .insert({
+          name: businessName,
+          category,
+          whatsapp_number: whatsapp,
+          currency,
+        })
+        .select()
+        .single();
+
+      if (bizError) throw bizError;
+
+      // Update Profile with business ID
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          business_id: business.id,
+          full_name: fullName || user.user_metadata?.full_name || 'Owner',
+        });
+
+      if (profileError) {
+        // If it already exists (e.g., trigger created it), just update
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ business_id: business.id })
+          .eq('id', user.id);
+        
+        if (updateError) throw updateError;
+      }
+
+      // Success, go to dashboard
+      // Add a slight delay to allow AuthContext to fetch the new business ID
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
+      
+    } catch (err: any) {
+      setError(err.message || 'Failed to complete setup');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -38,32 +134,38 @@ export default function Register() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           
+          {error && (
+            <div className="mb-4 bg-red-50 p-3 rounded text-red-600 text-sm border border-red-100">
+              {error}
+            </div>
+          )}
+
           {step === 1 ? (
             <form className="space-y-6" onSubmit={handleRegister}>
               <div>
-                <label className="block text-sm font-medium text-slate-700">Owner Name</label>
+                <label className="block text-sm font-medium text-slate-700">Full Name</label>
                 <div className="mt-1">
-                  <input type="text" required className="input-field" placeholder="John Doe" />
+                  <input type="text" required value={fullName} onChange={e => setFullName(e.target.value)} className="input-field" placeholder="John Doe" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">Email address</label>
                 <div className="mt-1">
-                  <input type="email" required className="input-field" placeholder="john@example.com" />
+                  <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input-field" placeholder="john@example.com" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">Password</label>
                 <div className="mt-1">
-                  <input type="password" required className="input-field" />
+                  <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="input-field" />
                 </div>
               </div>
 
               <div>
-                <button type="submit" className="w-full btn-primary py-2.5 flex justify-center">
-                  Create Account
+                <button type="submit" disabled={isLoading} className="w-full btn-primary py-2.5 flex justify-center">
+                  {isLoading ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
             </form>
@@ -72,14 +174,14 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-slate-700">Business Name</label>
                 <div className="mt-1">
-                  <input type="text" required className="input-field" placeholder="My Fashion Store" />
+                  <input type="text" required value={businessName} onChange={e => setBusinessName(e.target.value)} className="input-field" placeholder="My Fashion Store" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">Business Category</label>
                 <div className="mt-1">
-                  <select className="input-field">
+                  <select value={category} onChange={e => setCategory(e.target.value)} className="input-field">
                     <option>Fashion</option>
                     <option>Home Decor</option>
                     <option>Bakery</option>
@@ -92,14 +194,14 @@ export default function Register() {
               <div>
                 <label className="block text-sm font-medium text-slate-700">WhatsApp Number</label>
                 <div className="mt-1">
-                  <input type="tel" required className="input-field" placeholder="+94 77 123 4567" />
+                  <input type="tel" required value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="input-field" placeholder="+94 77 123 4567" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">Currency</label>
                 <div className="mt-1">
-                  <select className="input-field">
+                  <select value={currency} onChange={e => setCurrency(e.target.value)} className="input-field">
                     <option>LKR (Rs.)</option>
                     <option>USD ($)</option>
                   </select>
@@ -107,8 +209,8 @@ export default function Register() {
               </div>
 
               <div>
-                <button type="submit" className="w-full btn-primary py-2.5 flex justify-center text-lg shadow-sm">
-                  Continue
+                <button type="submit" disabled={isLoading} className="w-full btn-primary py-2.5 flex justify-center text-lg shadow-sm">
+                  {isLoading ? 'Saving...' : 'Complete Setup'}
                 </button>
               </div>
             </form>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Search, Send, CheckCircle2, Sparkles } from 'lucide-react';
+import { Search, Send, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
+import { createOrder } from '../lib/api';
 
 const chatList = [
   { id: 1, name: 'Nadeesha', message: 'Is the black dress available?', time: '10:42 AM', unread: true },
@@ -10,6 +12,48 @@ const chatList = [
 export default function Conversations() {
   const [inputText, setInputText] = useState('');
   const [showAIPanel, setShowAIPanel] = useState(true);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const { businessId } = useAuth();
+
+  const handleCreateOrder = async () => {
+    if (!businessId) {
+      alert("Please ensure your business is fully set up first.");
+      return;
+    }
+    
+    setIsCreatingOrder(true);
+    
+    // Hardcoded mock order data for the AI extraction simulation
+    const orderData = {
+      customerName: 'Nadeesha',
+      customerPhone: '+94771234567',
+      subtotal: 6900,
+      deliveryFee: 350,
+    };
+    
+    const items = [
+      {
+        productId: null, // Normally we would look up the product ID
+        quantity: 1,
+        price: 6900
+      }
+    ];
+
+    const result = await createOrder(businessId, orderData, items);
+    
+    setIsCreatingOrder(false);
+    
+    if (result.success) {
+      setOrderCreated(true);
+      setTimeout(() => {
+        setShowAIPanel(false);
+        setOrderCreated(false);
+      }, 2000);
+    } else {
+      alert('Failed to create order. Make sure you have set up the Supabase database schema.');
+    }
+  };
 
   return (
     <div className="flex h-[calc(100vh-8rem)] -m-6 bg-white border-t border-slate-200">
@@ -148,9 +192,21 @@ export default function Conversations() {
               </div>
             </div>
             
-            <button className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center space-x-2">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Create Order</span>
+            <button 
+              onClick={handleCreateOrder}
+              disabled={isCreatingOrder || orderCreated}
+              className={`w-full py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm flex items-center justify-center space-x-2
+                ${orderCreated ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'}
+                ${isCreatingOrder ? 'opacity-70 cursor-not-allowed' : ''}
+              `}
+            >
+              {isCreatingOrder ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /><span>Processing...</span></>
+              ) : orderCreated ? (
+                <><CheckCircle2 className="h-4 w-4" /><span>Order Created!</span></>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4" /><span>Create Order</span></>
+              )}
             </button>
             <p className="text-center text-xs text-slate-400 mt-3">Review details before creating order</p>
           </div>
