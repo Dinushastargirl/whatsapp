@@ -57,6 +57,37 @@ export const getCustomers = async (businessId: string) => {
   return data || [];
 };
 
+export const createCustomer = async (businessId: string, customerData: { name: string, phone?: string }) => {
+  const { data, error } = await supabase
+    .from('customers')
+    .insert({
+      business_id: businessId,
+      name: customerData.name,
+      phone: customerData.phone,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating customer:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, data };
+};
+
+export const deleteCustomer = async (customerId: string) => {
+  const { error } = await supabase
+    .from('customers')
+    .delete()
+    .eq('id', customerId);
+
+  if (error) {
+    console.error('Error deleting customer:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+};
+
 export const createOrder = async (businessId: string, orderData: any, items: any[]) => {
   try {
     // 1. Create or Find Customer

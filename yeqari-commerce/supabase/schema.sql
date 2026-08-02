@@ -130,7 +130,7 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.follow_ups ENABLE ROW LEVEL SECURITY;
 
 -- Create helper function to get current user's business_id
-CREATE OR REPLACE FUNCTION auth.business_id() RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION public.business_id() RETURNS UUID AS $$
   SELECT business_id FROM public.profiles WHERE id = auth.uid() LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
@@ -143,29 +143,29 @@ CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Businesses
-CREATE POLICY "Users can view their own business" ON public.businesses FOR SELECT USING (id = auth.business_id());
-CREATE POLICY "Users can update their own business" ON public.businesses FOR UPDATE USING (id = auth.business_id());
+CREATE POLICY "Users can view their own business" ON public.businesses FOR SELECT USING (id = public.business_id());
+CREATE POLICY "Users can update their own business" ON public.businesses FOR UPDATE USING (id = public.business_id());
 -- Anyone can insert a business (used during signup)
 CREATE POLICY "Users can insert businesses" ON public.businesses FOR INSERT WITH CHECK (true);
 
 -- Customers
-CREATE POLICY "Users can manage their business customers" ON public.customers FOR ALL USING (business_id = auth.business_id());
+CREATE POLICY "Users can manage their business customers" ON public.customers FOR ALL USING (business_id = public.business_id());
 
 -- Products
-CREATE POLICY "Users can manage their business products" ON public.products FOR ALL USING (business_id = auth.business_id());
+CREATE POLICY "Users can manage their business products" ON public.products FOR ALL USING (business_id = public.business_id());
 
 -- Orders
-CREATE POLICY "Users can manage their business orders" ON public.orders FOR ALL USING (business_id = auth.business_id());
+CREATE POLICY "Users can manage their business orders" ON public.orders FOR ALL USING (business_id = public.business_id());
 
 -- Order Items
 CREATE POLICY "Users can manage their business order items" ON public.order_items FOR ALL USING (
-    order_id IN (SELECT id FROM public.orders WHERE business_id = auth.business_id())
+    order_id IN (SELECT id FROM public.orders WHERE business_id = public.business_id())
 );
 
 -- Payments
 CREATE POLICY "Users can manage their business payments" ON public.payments FOR ALL USING (
-    order_id IN (SELECT id FROM public.orders WHERE business_id = auth.business_id())
+    order_id IN (SELECT id FROM public.orders WHERE business_id = public.business_id())
 );
 
 -- Follow-ups
-CREATE POLICY "Users can manage their business follow ups" ON public.follow_ups FOR ALL USING (business_id = auth.business_id());
+CREATE POLICY "Users can manage their business follow ups" ON public.follow_ups FOR ALL USING (business_id = public.business_id());
