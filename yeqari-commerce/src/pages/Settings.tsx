@@ -4,8 +4,9 @@ import { useAuth } from '../lib/AuthContext';
 import { getBusiness, updateBusiness } from '../lib/api';
 
 export default function Settings() {
-  const { businessId } = useAuth();
+  const { businessId, user, signOut } = useAuth();
   
+  const [activeTab, setActiveTab] = useState('profile');
   const [business, setBusiness] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,35 +57,10 @@ export default function Settings() {
     );
   }
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-        <p className="mt-1 text-sm text-slate-500">Manage your business profile and preferences.</p>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row">
-        
-        {/* Settings Nav */}
-        <div className="w-full md:w-64 bg-slate-50 p-4 border-b md:border-b-0 md:border-r border-slate-200">
-          <nav className="space-y-1">
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium rounded-md bg-white text-brand-600 shadow-sm">
-              <Store className="h-4 w-4 mr-2" /> Business Profile
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              <User className="h-4 w-4 mr-2" /> Account
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              <Wallet className="h-4 w-4 mr-2" /> Billing
-            </a>
-            <a href="#" className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              <Bell className="h-4 w-4 mr-2" /> Notifications
-            </a>
-          </nav>
-        </div>
-
-        {/* Settings Content */}
-        <div className="p-6 flex-1">
+  const renderContent = () => {
+    if (activeTab === 'profile') {
+      return (
+        <>
           <h3 className="text-lg font-medium text-slate-900 mb-4">Business Information</h3>
           
           {message.text && (
@@ -161,6 +137,140 @@ export default function Settings() {
               </button>
             </div>
           </form>
+        </>
+      );
+    }
+
+    if (activeTab === 'account') {
+      return (
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Account Details</h3>
+          
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="text-sm font-medium text-slate-900">Email Address</h4>
+            <p className="mt-1 text-sm text-slate-600">{user?.email}</p>
+          </div>
+
+          <div className="border-t border-slate-200 pt-6">
+            <h4 className="text-sm font-medium text-slate-900 mb-2">Sign Out</h4>
+            <p className="text-sm text-slate-500 mb-4">You can securely sign out of your account here.</p>
+            <button 
+              onClick={signOut}
+              className="px-4 py-2 border border-red-200 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === 'billing') {
+      return (
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Billing & Subscription</h3>
+          
+          <div className="bg-brand-50 p-6 rounded-xl border border-brand-100 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div>
+              <h4 className="text-brand-900 font-bold text-lg">14-Day Free Trial</h4>
+              <p className="text-brand-700 text-sm mt-1">Your trial expires in 13 days.</p>
+            </div>
+            <button className="mt-4 sm:mt-0 btn-primary whitespace-nowrap">
+              Upgrade Plan
+            </button>
+          </div>
+
+          <div className="border-t border-slate-200 pt-6">
+            <h4 className="text-sm font-medium text-slate-900 mb-4">Invoices</h4>
+            <p className="text-sm text-slate-500 italic">No past invoices available.</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === 'notifications') {
+      return (
+        <div className="space-y-6">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Notification Preferences</h3>
+          
+          <div className="space-y-4">
+            <div className="flex items-center justify-between py-3 border-b border-slate-100">
+              <div>
+                <h4 className="text-sm font-medium text-slate-900">New Order Alerts</h4>
+                <p className="text-xs text-slate-500">Receive an email when you get a new order.</p>
+              </div>
+              <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="toggle" id="toggle1" checked readOnly className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                <label htmlFor="toggle1" className="toggle-label block overflow-hidden h-5 rounded-full bg-brand-500 cursor-pointer"></label>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between py-3 border-b border-slate-100">
+              <div>
+                <h4 className="text-sm font-medium text-slate-900">Marketing Emails</h4>
+                <p className="text-xs text-slate-500">Receive updates about new Yeqari features.</p>
+              </div>
+              <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="toggle" id="toggle2" readOnly className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" />
+                <label htmlFor="toggle2" className="toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer"></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
+        <p className="mt-1 text-sm text-slate-500">Manage your business profile and preferences.</p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+        
+        {/* Settings Nav */}
+        <div className="w-full md:w-64 bg-slate-50 p-4 border-b md:border-b-0 md:border-r border-slate-200">
+          <nav className="space-y-1">
+            <button 
+              onClick={() => setActiveTab('profile')} 
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'profile' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Store className="h-4 w-4 mr-2" /> Business Profile
+            </button>
+            <button 
+              onClick={() => setActiveTab('account')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'account' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <User className="h-4 w-4 mr-2" /> Account
+            </button>
+            <button 
+              onClick={() => setActiveTab('billing')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'billing' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Wallet className="h-4 w-4 mr-2" /> Billing
+            </button>
+            <button 
+              onClick={() => setActiveTab('notifications')}
+              className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'notifications' ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Bell className="h-4 w-4 mr-2" /> Notifications
+            </button>
+          </nav>
+        </div>
+
+        {/* Settings Content */}
+        <div className="p-6 flex-1">
+          {renderContent()}
         </div>
       </div>
     </div>

@@ -1,15 +1,41 @@
-import React from 'react';
-import { Search, Plus, Filter, MoreHorizontal, AlertTriangle } from 'lucide-react';
-
-const products = [
-  { id: 'PROD-001', name: 'Black Dress', sku: 'BD-01-M', category: 'Clothing', price: 'Rs. 6,900', stock: 12, threshold: 5, status: 'In Stock' },
-  { id: 'PROD-002', name: 'Red Dress', sku: 'RD-02-S', category: 'Clothing', price: 'Rs. 7,500', stock: 3, threshold: 5, status: 'Low Stock' },
-  { id: 'PROD-003', name: 'White Shirt', sku: 'WS-01-L', category: 'Clothing', price: 'Rs. 4,500', stock: 0, threshold: 10, status: 'Out of Stock' },
-  { id: 'PROD-004', name: 'Gold Necklace', sku: 'GN-01', category: 'Jewellery', price: 'Rs. 12,000', stock: 5, threshold: 2, status: 'In Stock' },
-  { id: 'PROD-005', name: 'Leather Handbag', sku: 'HB-05', category: 'Accessories', price: 'Rs. 9,500', stock: 8, threshold: 3, status: 'In Stock' },
-];
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, Filter, MoreHorizontal, AlertTriangle, Loader2, Trash2 } from 'lucide-react';
+import { useAuth } from '../lib/AuthContext';
+import { getProducts, deleteProduct } from '../lib/api';
+import AddProductModal from '../components/AddProductModal';
 
 export default function Products() {
+  const { businessId } = useAuth();
+  
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (businessId) {
+      loadProducts();
+    }
+  }, [businessId]);
+
+  const loadProducts = async () => {
+    setIsLoading(true);
+    const data = await getProducts(businessId!);
+    setProducts(data);
+    setIsLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      await deleteProduct(id);
+      loadProducts();
+    }
+  };
+
+  // Calculate stats
+  const totalProducts = products.length;
+  const lowStockProducts = products.filter(p => p.status === 'Low Stock').length;
+  const outOfStockProducts = products.filter(p => p.status === 'Out of Stock').length;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -17,11 +43,17 @@ export default function Products() {
           <h2 className="text-2xl font-bold text-slate-900">Products & Inventory</h2>
           <p className="mt-1 text-sm text-slate-500">Manage your product catalog and track inventory levels.</p>
         </div>
-        <button className="btn-primary flex items-center space-x-2">
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center space-x-2">
           <Plus className="h-4 w-4" />
           <span>Add Product</span>
         </button>
       </div>
+
+      <AddProductModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={loadProducts}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
@@ -32,7 +64,7 @@ export default function Products() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Total Products</p>
-            <p className="text-2xl font-bold text-slate-900">24</p>
+            <p className="text-2xl font-bold text-slate-900">{totalProducts}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
@@ -41,7 +73,7 @@ export default function Products() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Low Stock Items</p>
-            <p className="text-2xl font-bold text-slate-900">3</p>
+            <p className="text-2xl font-bold text-slate-900">{lowStockProducts}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
@@ -52,7 +84,7 @@ export default function Products() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-500">Out of Stock</p>
-            <p className="text-2xl font-bold text-slate-900">1</p>
+            <p className="text-2xl font-bold text-slate-900">{outOfStockProducts}</p>
           </div>
         </div>
       </div>
@@ -79,60 +111,71 @@ export default function Products() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Product Name</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stock</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50 transition-colors cursor-pointer">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 flex-shrink-0 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-slate-900">{product.name}</div>
-                        <div className="text-xs text-slate-500">{product.category}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{product.sku}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">{product.price}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-slate-900">{product.stock}</span>
-                      <span className="text-xs text-slate-400">/ min {product.threshold}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex inline-flex items-center ${
-                      product.status === 'In Stock' ? 'bg-green-100 text-green-800' : 
-                      product.status === 'Low Stock' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {product.status === 'Low Stock' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-slate-400 hover:text-slate-600">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </button>
-                  </td>
+        <div className="overflow-x-auto min-h-[300px]">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <Loader2 className="h-8 w-8 text-brand-500 animate-spin" />
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col justify-center items-center h-48 text-slate-500">
+              <p>No products found.</p>
+              <button onClick={() => setIsModalOpen(true)} className="mt-2 text-brand-600 font-medium hover:underline">Add your first product</button>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Product Name</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">SKU</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Price</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Stock</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {products.map((product) => (
+                  <tr key={product.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 flex-shrink-0 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-slate-900">{product.name}</div>
+                          <div className="text-xs text-slate-500">{product.category}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{product.sku || '-'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">Rs. {product.price}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-medium text-slate-900">{product.stock}</span>
+                        <span className="text-xs text-slate-400">/ min {product.low_stock_threshold || 5}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex inline-flex items-center ${
+                        product.status === 'In Stock' ? 'bg-green-100 text-green-800' : 
+                        product.status === 'Low Stock' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {product.status === 'Low Stock' && <AlertTriangle className="w-3 h-3 mr-1" />}
+                        {product.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button onClick={() => handleDelete(product.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

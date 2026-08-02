@@ -43,6 +43,42 @@ export const getProducts = async (businessId: string) => {
   return data || [];
 };
 
+export const createProduct = async (businessId: string, productData: any) => {
+  const { data, error } = await supabase
+    .from('products')
+    .insert({
+      business_id: businessId,
+      name: productData.name,
+      sku: productData.sku,
+      category: productData.category,
+      price: productData.price,
+      stock: productData.stock,
+      low_stock_threshold: productData.low_stock_threshold || 5,
+      status: productData.stock <= (productData.low_stock_threshold || 5) ? (productData.stock === 0 ? 'Out of Stock' : 'Low Stock') : 'In Stock'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating product:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, data };
+};
+
+export const deleteProduct = async (productId: string) => {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', productId);
+
+  if (error) {
+    console.error('Error deleting product:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+};
+
 export const getCustomers = async (businessId: string) => {
   const { data, error } = await supabase
     .from('customers')
