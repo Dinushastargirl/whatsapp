@@ -71,17 +71,20 @@ export default function Register() {
       const user = authData.user;
       if (!user) throw new Error('Not authenticated. Please try logging in again.');
 
+      // Generate the ID client-side so we don't need to use .select() which triggers the RLS SELECT policy
+      // before the profile is linked.
+      const newBusinessId = crypto.randomUUID();
+
       // 1. Create Business
-      const { data: business, error: bizError } = await supabase
+      const { error: bizError } = await supabase
         .from('businesses')
         .insert({
+          id: newBusinessId,
           name: businessName,
           category,
           whatsapp_number: whatsapp,
           currency,
-        })
-        .select()
-        .single();
+        }); // no .select() here!
 
       if (bizError) throw bizError;
 
@@ -90,7 +93,7 @@ export default function Register() {
         .from('profiles')
         .insert({
           id: user.id,
-          business_id: business.id,
+          business_id: newBusinessId,
           full_name: fullName || user.user_metadata?.full_name || 'Owner',
         });
 
@@ -98,7 +101,7 @@ export default function Register() {
         // If it already exists (e.g., trigger created it), just update
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ business_id: business.id })
+          .update({ business_id: newBusinessId })
           .eq('id', user.id);
         
         if (updateError) throw updateError;
@@ -111,6 +114,7 @@ export default function Register() {
       navigate('/');
       
     } catch (err: any) {
+      console.error('Setup error:', err);
       setError(err.message || 'Failed to complete setup');
     } finally {
       setIsLoading(false);
