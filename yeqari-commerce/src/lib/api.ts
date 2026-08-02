@@ -1,5 +1,33 @@
 import { supabase } from './supabase';
 
+export const getProducts = async (businessId: string) => {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('name');
+  
+  if (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+  return data || [];
+};
+
+export const getCustomers = async (businessId: string) => {
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('name');
+  
+  if (error) {
+    console.error('Error fetching customers:', error);
+    return [];
+  }
+  return data || [];
+};
+
 export const createOrder = async (businessId: string, orderData: any, items: any[]) => {
   try {
     // 1. Create or Find Customer

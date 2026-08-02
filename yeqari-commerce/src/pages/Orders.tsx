@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Search, Filter, Eye, ChevronDown } from 'lucide-react';
+import { Search, Filter, Eye, ChevronDown, MoreVertical, Package, ChevronRight } from 'lucide-react';
+import CreateOrderModal from '../components/CreateOrderModal';
 
 const orders = [
-  { id: '#1024', customer: 'Nadeesha Silva', items: 'Black Dress × 1', amount: 'Rs. 7,250', payment: 'Pending', status: 'Payment Pending', date: 'Today, 10:42 AM' },
-  { id: '#1023', customer: 'Amaya Perera', items: 'Red Dress × 2', amount: 'Rs. 14,000', payment: 'Verified', status: 'Processing', date: 'Today, 09:15 AM' },
-  { id: '#1022', customer: 'Tharushi Fernando', items: 'White Shirt × 1', amount: 'Rs. 4,500', payment: 'Verified', status: 'Ready', date: 'Yesterday' },
-  { id: '#1021', customer: 'Kasun Bandara', items: 'Gold Necklace × 1', amount: 'Rs. 12,000', payment: 'Verified', status: 'Delivered', date: 'Jul 30' },
-  { id: '#1020', customer: 'Dilini Weerasinghe', items: 'Leather Handbag × 1', amount: 'Rs. 9,500', payment: 'Rejected', status: 'Cancelled', date: 'Jul 29' },
+  { id: '#1024', customer: 'Nadeesha Silva', items: 'Black Dress (M) × 1', amount: 'Rs. 7,250', payment: 'Pending', status: 'Payment Pending', date: 'Today, 10:45 AM' },
+  { id: '#1023', customer: 'Amaya Fernando', items: 'Red Dress (L) × 2', amount: 'Rs. 14,000', payment: 'Verified', status: 'Processing', date: 'Today, 09:15 AM' },
+  { id: '#1022', customer: 'Tharushi Perera', items: 'White Shirt (S) × 1', amount: 'Rs. 4,500', payment: 'Verified', status: 'Ready', date: 'Yesterday' },
+  { id: '#1021', customer: 'Kavindi Bandara', items: 'Blue Jeans (30) × 1, Crop Top (M) × 1', amount: 'Rs. 11,200', payment: 'Verified', status: 'Delivered', date: 'Yesterday' },
+  { id: '#1020', customer: 'Sanduni Silva', items: 'Floral Skirt (M) × 1', amount: 'Rs. 5,500', payment: 'Rejected', status: 'New', date: 'Oct 24' },
 ];
 
 const statusStyles: Record<string, string> = {
@@ -27,6 +28,7 @@ const paymentStyles: Record<string, string> = {
 
 export default function Orders() {
   const [activeTab, setActiveTab] = useState('All');
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const tabs = ['All', 'New', 'Payment Pending', 'Processing', 'Ready', 'Delivered'];
 
@@ -37,7 +39,19 @@ export default function Orders() {
           <h2 className="text-2xl font-bold text-slate-900">Orders</h2>
           <p className="mt-1 text-sm text-slate-500">Track and fulfill your customer orders.</p>
         </div>
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center space-x-2">
+          <span>Create Order</span>
+        </button>
       </div>
+
+      <CreateOrderModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          setIsModalOpen(false);
+          alert('Order successfully logged in Supabase!');
+        }} 
+      />
 
       <div className="card overflow-hidden flex flex-col">
         <div className="border-b border-slate-200">

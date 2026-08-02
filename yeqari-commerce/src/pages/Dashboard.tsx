@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TrendingUp, Users, ShoppingBag, CreditCard, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CreateOrderModal from '../components/CreateOrderModal';
 
 const stats = [
   { name: "Today's Sales", value: 'Rs. 184,500', icon: TrendingUp, change: '+12%', changeType: 'positive' },
@@ -31,6 +32,8 @@ const recentOrders = [
 ];
 
 export default function Dashboard() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
@@ -38,10 +41,19 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-slate-900">Dashboard</h2>
           <p className="mt-1 text-sm text-slate-500">Welcome back, Demo Business</p>
         </div>
-        <button className="btn-primary flex items-center space-x-2">
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary flex items-center space-x-2">
           <span>Create Order</span>
         </button>
       </div>
+
+      <CreateOrderModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          setIsModalOpen(false);
+          alert('Order successfully logged in Supabase!');
+        }} 
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
