@@ -20,14 +20,19 @@ export default function Register() {
   const [whatsapp, setWhatsapp] = useState('');
   const [currency, setCurrency] = useState('LKR (Rs.)');
 
-  const { session } = useAuth();
+  const { session, businessId, refreshBusinessId } = useAuth();
 
-  // If already logged in, skip to step 2 or dashboard
+  // If already logged in AND has business, skip to dashboard. 
+  // If logged in but NO business, force step 2.
   React.useEffect(() => {
-    if (session && step === 1) {
-      setStep(2);
+    if (session) {
+      if (businessId) {
+        navigate('/');
+      } else {
+        setStep(2);
+      }
     }
-  }, [session, step]);
+  }, [session, businessId, navigate]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +67,11 @@ export default function Register() {
     setError('');
 
     try {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error('Not authenticated');
+      const { data: authData } = await supabase.auth.getUser();
+      const user = authData.user;
+      if (!user) throw new Error('Not authenticated. Please try logging in again.');
 
-      // Create Business
+      // 1. Create Business
       const { data: business, error: bizError } = await supabase
         .from('businesses')
         .insert({
@@ -79,7 +85,7 @@ export default function Register() {
 
       if (bizError) throw bizError;
 
-      // Update Profile with business ID
+      // 2. Update Profile with business ID
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -98,11 +104,11 @@ export default function Register() {
         if (updateError) throw updateError;
       }
 
-      // Success, go to dashboard
-      // Add a slight delay to allow AuthContext to fetch the new business ID
-      setTimeout(() => {
-        navigate('/');
-      }, 500);
+      // 3. Force the AuthContext to fetch the new businessId
+      await refreshBusinessId();
+      
+      // App.tsx routing will automatically take them to '/' now
+      navigate('/');
       
     } catch (err: any) {
       setError(err.message || 'Failed to complete setup');

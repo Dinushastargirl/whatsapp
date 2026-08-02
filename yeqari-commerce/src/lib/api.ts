@@ -1,5 +1,34 @@
 import { supabase } from './supabase';
 
+export const getBusiness = async (businessId: string) => {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('id', businessId)
+    .single();
+  
+  if (error) {
+    console.error('Error fetching business:', error);
+    return null;
+  }
+  return data;
+};
+
+export const updateBusiness = async (businessId: string, updates: any) => {
+  const { data, error } = await supabase
+    .from('businesses')
+    .update(updates)
+    .eq('id', businessId)
+    .select()
+    .single();
+    
+  if (error) {
+    console.error('Error updating business:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: true, data };
+};
+
 export const getProducts = async (businessId: string) => {
   const { data, error } = await supabase
     .from('products')

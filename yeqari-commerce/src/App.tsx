@@ -15,7 +15,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 
 function App() {
-  const { session, isLoading } = useAuth();
+  const { session, businessId, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -28,13 +28,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={session ? <Navigate to="/" /> : <Login />} />
-        <Route path="/register" element={session ? <Navigate to="/" /> : <Register />} />
+        <Route path="/login" element={session && businessId ? <Navigate to="/" /> : <Login />} />
+        <Route path="/register" element={session && businessId ? <Navigate to="/" /> : <Register />} />
         
         {/* Protected Routes */}
         <Route 
           path="/" 
-          element={session ? <Layout /> : <Navigate to="/login" />}
+          element={session ? (businessId ? <Layout /> : <Navigate to="/register" />) : <Navigate to="/login" />}
         >
           <Route index element={<Dashboard />} />
           <Route path="conversations" element={<Conversations />} />
